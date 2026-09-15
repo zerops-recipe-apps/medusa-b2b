@@ -58,7 +58,7 @@ Storefront: [http://localhost:8000](http://localhost:8000)
 | Admin UI | `{API_URL}/app` on the **medusa** service (port 9000); `{API_URL}/` redirects there |
 | Storefront | `{APP_URL}` on **nextstore** (port 8000) |
 
-Credentials: **medusa** service secrets `SUPERADMIN_EMAIL` (default `admin@example.com`) and `SUPERADMIN_PASSWORD` (generated on import).
+Credentials: **medusa** service secrets `SUPERADMIN_EMAIL` (default `admin@example.com`) and `SUPERADMIN_PASSWORD` (generated on import). Use those only on `{API_URL}/app` — they are not storefront customer logins.
 
 Demo B2B actors from seed: company admin `company.admin@example.com` and buyer `company.buyer@example.com` (register those emails on the storefront to attach auth).
 
