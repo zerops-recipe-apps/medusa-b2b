@@ -1,7 +1,5 @@
-import { QUOTE_MODULE } from "./src/modules/quote"
-import { APPROVAL_MODULE } from "./src/modules/approval"
-import { COMPANY_MODULE } from "./src/modules/company"
-import { loadEnv, defineConfig, Modules } from "@medusajs/framework/utils"
+import { loadEnv, defineConfig } from "@medusajs/framework/utils"
+import type { InputConfigModules } from "@medusajs/types"
 
 loadEnv(process.env.NODE_ENV || "development", process.cwd())
 
@@ -16,70 +14,66 @@ const LOCKING_REDIS_URL = process.env.LOCKING_REDIS_URL || REDIS_URL
 const BACKEND_URL = process.env.BACKEND_URL || ""
 const STOREFRONT_URL = process.env.STOREFRONT_URL || ""
 
-const modules: Record<string, unknown> = {
-  [COMPANY_MODULE]: {
-    resolve: "./modules/company",
-  },
-  [QUOTE_MODULE]: {
-    resolve: "./modules/quote",
-  },
-  [APPROVAL_MODULE]: {
-    resolve: "./modules/approval",
-  },
-}
+const modules: InputConfigModules = [
+  { resolve: "./modules/company" },
+  { resolve: "./modules/quote" },
+  { resolve: "./modules/approval" },
+]
 
 if (envEnabled(process.env.REDIS_URL)) {
-  modules[Modules.CACHE] = {
-    resolve: "@medusajs/medusa/caching",
-    options: {
-      providers: [
-        {
-          resolve: "@medusajs/medusa/caching-redis",
-          id: "caching-redis",
-          is_default: true,
-          options: {
-            redisUrl: CACHE_REDIS_URL,
+  modules.push(
+    {
+      resolve: "@medusajs/medusa/caching",
+      options: {
+        providers: [
+          {
+            resolve: "@medusajs/medusa/caching-redis",
+            id: "caching-redis",
+            is_default: true,
+            options: {
+              redisUrl: CACHE_REDIS_URL,
+            },
           },
-        },
-      ],
-    },
-  }
-  modules[Modules.EVENT_BUS] = {
-    resolve: "@medusajs/medusa/event-bus-redis",
-    options: {
-      redisUrl: EVENTS_REDIS_URL,
-    },
-  }
-  modules[Modules.WORKFLOW_ENGINE] = {
-    resolve: "@medusajs/medusa/workflow-engine-redis",
-    options: {
-      redis: {
-        redisUrl: WE_REDIS_URL,
+        ],
       },
     },
-  }
-  modules[Modules.LOCKING] = {
-    resolve: "@medusajs/medusa/locking",
-    options: {
-      providers: [
-        {
-          resolve: "@medusajs/medusa/locking-redis",
-          id: "locking-redis",
-          is_default: true,
-          options: {
-            redisUrl: LOCKING_REDIS_URL,
-          },
-        },
-      ],
+    {
+      resolve: "@medusajs/medusa/event-bus-redis",
+      options: {
+        redisUrl: EVENTS_REDIS_URL,
+      },
     },
-  }
+    {
+      resolve: "@medusajs/medusa/workflow-engine-redis",
+      options: {
+        redis: {
+          redisUrl: WE_REDIS_URL,
+        },
+      },
+    },
+    {
+      resolve: "@medusajs/medusa/locking",
+      options: {
+        providers: [
+          {
+            resolve: "@medusajs/medusa/locking-redis",
+            id: "locking-redis",
+            is_default: true,
+            options: {
+              redisUrl: LOCKING_REDIS_URL,
+            },
+          },
+        ],
+      },
+    }
+  )
 }
 
 if (
   envEnabled(process.env.MINIO_ENDPOINT) &&
   envEnabled(process.env.MINIO_BUCKET)
 ) {
-  modules[Modules.FILE] = {
+  modules.push({
     resolve: "@medusajs/medusa/file",
     options: {
       providers: [
@@ -87,8 +81,7 @@ if (
           resolve: "@medusajs/medusa/file-s3",
           id: "s3",
           options: {
-            file_url:
-              process.env.MINIO_ENDPOINT + "/" + process.env.MINIO_BUCKET,
+            file_url: process.env.MINIO_ENDPOINT + "/" + process.env.MINIO_BUCKET,
             access_key_id: process.env.MINIO_ACCESS_KEY,
             secret_access_key: process.env.MINIO_SECRET_KEY,
             region: "us-east-1",
@@ -101,11 +94,11 @@ if (
         },
       ],
     },
-  }
+  })
 }
 
 if (envEnabled(process.env.STRIPE_API_KEY)) {
-  modules[Modules.PAYMENT] = {
+  modules.push({
     resolve: "@medusajs/medusa/payment",
     options: {
       providers: [
@@ -119,7 +112,7 @@ if (envEnabled(process.env.STRIPE_API_KEY)) {
         },
       ],
     },
-  }
+  })
 }
 
 module.exports = defineConfig({
