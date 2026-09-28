@@ -2,6 +2,5 @@
 
 Next.js 15 App Router B2B storefront (Yarn **3.2.3**). Part of [medusa-b2b](../) — see root [`AGENTS.md`](../AGENTS.md).
 
-- Hostname / `zeropsSetup`: `nextstore` — port `8000`
-- Setup in root [`zerops.yml`](../zerops.yml) — `cd nextstore` for build/run
-- Dev: `yarn dev` from this directory
+- Not imported by the Medusa recipe. Local compose only — port `8000`
+- Dev: `yarn dev` from this directory against `{API_URL}`
