@@ -73,10 +73,11 @@ Need help? Join the [Zerops Discord](https://discord.gg/zeropsio).
 
 ### 1. Monorepo `zerops.yml`
 
-[`zerops.yml`](zerops.yml) at the repo root defines two setups:
+[`zerops.yml`](zerops.yml) at the repo root defines production (`medusa` / `nextstore`), Agent/Remote stage (`medusa-stage` / `nextstore-stage`), and idle workspace (`medusa-dev` / `nextstore-dev`) setups:
 
-- **`medusa`** — builds in `backend/`, deploys `.medusa/server` flattened to `/var/www`, port 9000, init migrate/seed/publishable key/reload nextstore
-- **`nextstore`** — builds in `nextstore/` with Corepack + Yarn Berry, port 8000, readiness `/api/health`
+- **`medusa` / `nextstore`** — Local / Stage / Small / HA. Flattened production pipeline.
+- **`medusa-stage` / `nextstore-stage`** — AI Agent / Remote deploy targets. Storefront reads `${medusastage_CHANNEL_PUBLISHABLE_KEY}`.
+- **`medusa-dev` / `nextstore-dev`** — idle workspaces (`zsc noop`). SSH in and run `yarn dev`.
 
 Both services use `buildFromGit: https://github.com/zerops-recipe-apps/medusa-b2b`; Zerops selects the setup via `zeropsSetup` in [`.zerops-recipe/`](.zerops-recipe/).
 

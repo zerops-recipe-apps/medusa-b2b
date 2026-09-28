@@ -6,8 +6,8 @@ Medusa v2.21 B2B backend + Next.js 15 storefront monorepo on Zerops (`nodejs@24`
 
 | Path | `zeropsSetup` | Port | Notes |
 | --- | --- | --- | --- |
-| `backend/` | `medusa` | 9000 | Yarn 1, Medusa admin at `/app` (company, quote, approval) |
-| `nextstore/` | `nextstore` | 8000 | Yarn 3 Berry, SSR |
+| `backend/` | `medusa` / `medusa-stage` / `medusa-dev` | 9000 | Yarn 1, admin at `/app`; `*-dev` is idle (`zsc noop`) |
+| `nextstore/` | `nextstore` / `nextstore-stage` / `nextstore-dev` | 8000 | Yarn 3 Berry; `*-dev` is idle |
 
 Root [`zerops.yml`](zerops.yml) — both setups. Import YAMLs live in [`.zerops-recipe/`](.zerops-recipe/) (six environments). Canonical catalog copy can move to `zeropsio/recipes` later.
 
