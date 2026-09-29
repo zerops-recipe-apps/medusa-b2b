@@ -1,97 +1,57 @@
 # Medusa B2B
 
 <!-- #ZEROPS_EXTRACT_START:intro# -->
-Medusa v2.21 B2B backend and admin on [Zerops](https://zerops.io). PostgreSQL, Valkey, Meilisearch, and MinIO ship with the project; Agent / Remote / Local also get Mailpit. First deploy migrates, seeds a company with admin + employee spend limits, and writes a publishable key. The Next.js storefront stays in-repo for local compose — this recipe does not deploy it, so Mate can spin up Medusa on its own.
+Medusa v2.21 B2B backend and admin on [Zerops](https://zerops.io), with an optional Next.js storefront in a separate app repo. PostgreSQL, Valkey, Meilisearch, MinIO, and Mailpit (dev envs) ship with the recipe. Import **medusa** services only for a pure backend; add **nextstore** services for the full shop.
 <!-- #ZEROPS_EXTRACT_END:intro# -->
 
-⬇️ **Deploy on Zerops**
+## App repos (split for composability)
 
-Import YAMLs live in [`.zerops-recipe/`](.zerops-recipe/). Canonical catalog copy: [`zeropsio/recipes/medusa-b2b`](https://github.com/zeropsio/recipes/tree/main/medusa-b2b).
-
-## Repository layout
-
-| Path | Role | Port |
+| Repo | Role | Setups |
 | --- | --- | --- |
-| [`backend/`](backend/) | Medusa API + admin. Zerops setups: `dev` (workspace) and `prod`. | `9000` |
-| [`nextstore/`](nextstore/) | Official B2B storefront. **Not imported.** Run locally against `{API_URL}`. | `8000` |
+| [medusa-b2b](https://github.com/zerops-recipe-apps/medusa-b2b) | Backend (`backend/`) | `dev`, `prod` |
+| [medusa-b2b-nextstore](https://github.com/zerops-recipe-apps/medusa-b2b-nextstore) | Next.js storefront | `dev`, `prod` |
 
-Root [`zerops.yml`](zerops.yml) has only those two setups. A stage **service** (`medusastage`) is built with the `prod` setup.
+`nextstore/` in this repo is for **local compose** only. Zerops recipes use the standalone nextstore repo so git-connected `dev` workspaces deploy `./` without deleting sibling folders.
 
-Based on the official [Medusa B2B starter](https://github.com/medusajs/b2b-starter) (company, quote, and approval modules).
+Recipe imports: [`.zerops-recipe/`](.zerops-recipe/) and [`zeropsio/recipes/medusa-b2b`](https://github.com/zeropsio/recipes/tree/main/medusa-b2b).
 
-## Requirements
+## Why not Nx / Turbo?
 
-- Node.js **24+** on Zerops (`nodejs@24`)
-- **Backend:** Node `^20.19.0 || >=22.12.0`, Yarn 1.22, PostgreSQL, Valkey
-- **Storefront (local):** Node `>=24.0.0`, Yarn 3.2.3 via Corepack
+Backend is Yarn 1 (classic); storefront is Yarn 3 Berry. There is no shared package graph — only two deployable apps. Workspace tooling would add ceremony without build-cache or task-graph wins.
+
+## Setups vs services
+
+Only **`dev`** and **`prod`** exist in `zerops.yml`. A **stage** hostname (`medusastage`) is still built with **`zeropsSetup: prod`**.
 
 ## Local development
 
-### Backend
-
 ```bash
-cd backend
-cp .env.template .env
-yarn
-yarn dev
+cd backend && yarn dev          # :9000, admin /app
+cd nextstore && yarn dev        # :8000 (optional)
 ```
-
-Admin: [http://localhost:9000/app](http://localhost:9000/app) — default `admin@example.com` / `supersecret` from `.env.template`.
-
-### Storefront (optional compose)
-
-```bash
-cd nextstore
-cp .env.template .env.local
-yarn
-yarn dev
-```
-
-Set `NEXT_PUBLIC_MEDUSA_BACKEND_URL` to the Medusa origin and a publishable key from Admin → Settings → API Key Management.
-
-## Admin login (Zerops)
-
-Admin UI is `{API_URL}/app` on **medusa** / **medusastage** (port 9000). `{API_URL}/` redirects there.
-
-Credentials: service vault `SUPERADMIN_EMAIL` (default `admin@example.com`) and `SUPERADMIN_PASSWORD` (generated on import).
-
-Demo B2B actors from seed: `company.admin@example.com` and `company.buyer@example.com`.
 
 <!-- #ZEROPS_EXTRACT_START:faq# -->
 ## FAQ
 
-**Why is there no Next.js service?** This recipe is the Medusa backend Mate should find. The storefront lives in `nextstore/` for local compose. A storefront recipe can attach later.
+**Mate / ZCP needs Medusa without a storefront** — import the recipe and remove (or do not deploy) `nextstore` / `nextstoredev` / `nextstorestage` services. Backend `buildFromGit` stays `medusa-b2b`.
 
-**Why no Nx / Turbo?** Backend is Yarn 1; storefront is Yarn 3 Berry. There is no shared package graph.
+**Search** — `search` is Meilisearch 1.10; backend indexes when `MEILISEARCH_*` is set.
 
-**dev vs prod vs stage?** Setups are only `dev` and `prod`. `medusadev` uses `dev` (full repo, no start). `medusastage` / `medusa` use `prod`. Stage is a hostname, not a setup.
+**Mail** — Mailpit on Agent / Remote / Local (`SMTP_HOST=mailpit`). Stage / prod use your SMTP relay via vault.
 
-**Where is search?** `search` is Meilisearch 1.10. The backend indexes products when `MEILISEARCH_HOST` and `MEILISEARCH_API_KEY` are set.
+**Vault** — project `vault:` in import.yaml; no `STRIPE_API_KEY: ${STRIPE_API_KEY}` passthrough in `zerops.yml`.
 
-**Where is mail?** Agent / Remote / Local import Mailpit (`SMTP_HOST=mailpit`, port `1025`). Stage / production leave SMTP vault empty for a real relay.
+**Publishable key** — backend init writes `CHANNEL_PUBLISHABLE_KEY` and POSTs nextstore `/api/internal/reload-env` when `RELOAD_SECRET` is set.
 
-**Why does `dev` deploy `./`?** A git-connected workspace that only flattened `backend/` would drop `nextstore/` on the next push.
+**Admin** — `{API_URL}/app`. Superadmin in medusa service `vault`.
 
-**Do I map `STRIPE_API_KEY: ${STRIPE_API_KEY}`?** No. Project vault keys inject as-is. `zerops.yml` only remaps (`API_URL` → `BACKEND_URL`) or computes (`DATABASE_URL`, `MEILISEARCH_HOST`).
-
-**Admin path?** Keep `admin.path` at `/app`.
+Community FAQ with Medusa maintainers is still TBD.
 <!-- #ZEROPS_EXTRACT_END:faq# -->
-
-Need help? Join the [Zerops Discord](https://discord.gg/zeropsio). Community FAQ for Medusa-on-Zerops is still open — starter maintainers welcome.
 
 <!-- #ZEROPS_EXTRACT_START:integration-guide# -->
 ## Integration Guide
 
-### 1. `zerops.yml` setups
-
-- **`prod`** — compiled Medusa (`.medusa/server` flattened). Used by `medusa` and `medusastage`.
-- **`dev`** — idle workspace, `deployFiles: ./`, no `start`. Used by `medusadev`. SSH in and `cd backend && yarn dev`.
-
-Import files use **vault** (not `envVariables` / `envSecrets`).
-
-### 2. Key configuration points
-
-- Redis modules when `REDIS_URL` is set; MinIO when `MINIO_*` is set; Meilisearch when `MEILISEARCH_*` is set; SMTP when `SMTP_HOST` is set
-- B2B company / quote / approval modules always load
-- Keep `admin.path` at `/app`
+- Backend `prod`: flattened `.medusa/server`. Backend `dev`: `deployFiles: ./` (full monorepo for SSH).
+- Storefront repo: root-level Next app; `dev` deploys `./`, `prod` deploys `.next` + `node_modules`.
+- No `run.start` — platform default start commands.
 <!-- #ZEROPS_EXTRACT_END:integration-guide# -->

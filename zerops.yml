@@ -54,12 +54,15 @@ zerops:
         MEILISEARCH_HOST: http://${search_hostname}:${search_port}
         MEILISEARCH_API_KEY: ${search_masterKey}
         MEILISEARCH_PRODUCT_INDEX_NAME: products
+        NEXTSTORE_RELOAD_SECRET: ${RELOAD_SECRET}
+        NEXTSTORE_RELOAD_HOST: ${NEXTSTORE_HOST}
       initCommands:
         - zsc execOnce ${appVersionId}_migration -- yarn migrate
         - zsc execOnce ${appVersionId}_links -- yarn syncLinks
         - zsc execOnce createInitialSuperadmin_v2 -- yarn createInitialSuperadmin
         - zsc execOnce seedInitialData -- yarn seedInitialData
         - yarn setInitialPublishableKey
+        - yarn reloadNextstoreEnv
         - zsc execOnce addInitialSearchDocuments -- yarn addInitialSearchDocuments
       ports:
         - port: 9000
