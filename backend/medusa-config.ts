@@ -13,11 +13,53 @@ const WE_REDIS_URL = process.env.WE_REDIS_URL || REDIS_URL
 const LOCKING_REDIS_URL = process.env.LOCKING_REDIS_URL || REDIS_URL
 const BACKEND_URL = process.env.BACKEND_URL || ""
 const STOREFRONT_URL = process.env.STOREFRONT_URL || ""
+const MEILISEARCH_HOST = process.env.MEILISEARCH_HOST || ""
+const MEILISEARCH_API_KEY = process.env.MEILISEARCH_API_KEY || ""
+
+const SMTP_HOST = process.env.SMTP_HOST
+const emailNotificationProvider = SMTP_HOST
+  ? {
+      resolve: "./modules/smtp-notification",
+      id: "smtp",
+      options: {
+        channels: ["email"],
+        host: SMTP_HOST,
+        port: Number(process.env.SMTP_PORT || "587"),
+        secure: process.env.SMTP_SECURE === "true",
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      },
+    }
+  : {
+      resolve: "@medusajs/medusa/notification-local",
+      id: "local-email",
+      options: {
+        name: "Local Email Notification Provider",
+        channels: ["email"],
+      },
+    }
 
 const modules: InputConfigModules = [
   { resolve: "./modules/company" },
   { resolve: "./modules/quote" },
   { resolve: "./modules/approval" },
+  {
+    resolve: "@medusajs/medusa/notification",
+    options: {
+      providers: [
+        {
+          resolve: "@medusajs/medusa/notification-local",
+          id: "local",
+          options: {
+            name: "Local Notification Provider",
+            channels: ["feed"],
+          },
+        },
+        emailNotificationProvider,
+      ],
+    },
+  },
 ]
 
 if (envEnabled(process.env.REDIS_URL)) {
@@ -93,6 +135,17 @@ if (
           },
         },
       ],
+    },
+  })
+}
+
+if (envEnabled(MEILISEARCH_HOST) && envEnabled(MEILISEARCH_API_KEY)) {
+  modules.push({
+    resolve: "./modules/meilisearch",
+    options: {
+      host: MEILISEARCH_HOST,
+      apiKey: MEILISEARCH_API_KEY,
+      productIndexName: process.env.MEILISEARCH_PRODUCT_INDEX_NAME || "products",
     },
   })
 }

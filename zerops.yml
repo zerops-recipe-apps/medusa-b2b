@@ -1,11 +1,15 @@
 # yaml-language-server: $schema=https://api.app-prg1.zerops.io/api/rest/public/settings/zerops-yaml-json-schema.json
 #
-# Monorepo: backend/ (Medusa v2.21 B2B + admin) and nextstore/ (Next.js 15 SSR).
-# Setup names `medusa` and `nextstore` must match import.yaml zeropsSetup.
-# Project value store: APP_URL / API_URL.
+# Setups are how a service is built — only `dev` and `prod`.
+# `*dev` hostnames use `dev` (workspace). `*stage` / `medusa` use `prod`.
+# This recipe deploys Medusa only. nextstore/ stays in git for local
+# compose; a git-connected `dev` container deploys `./` so a push
+# cannot delete the storefront tree.
+# Vault keys inject as-is (JWT_SECRET, SMTP_*, STRIPE_*). This file
+# only remaps or computes values.
 
 zerops:
-  - setup: medusa
+  - setup: prod
     build:
       envVariables:
         BACKEND_URL: ${API_URL}
@@ -13,9 +17,8 @@ zerops:
       buildCommands:
         - cd backend && yarn
         - cd backend && yarn build
-        # Overlay recipe scripts into the compiled tree (same /var/www
-        # layout as recipe-medusa; this repo is a monorepo).
         - cd backend && cp -f package.json tsconfig.json .medusa/server/
+      # Flattened runtime only — prod is not a git workspace.
       deployFiles:
         - backend/.medusa/server/~
         - backend/~node_modules
@@ -35,9 +38,9 @@ zerops:
         MEDUSA_FF_CACHING: "true"
         BACKEND_URL: ${API_URL}
         STOREFRONT_URL: ${APP_URL}
-        STORE_CORS: ${APP_URL},http://localhost:8000,http://localhost:5173,http://localhost:3000
-        ADMIN_CORS: ${API_URL},http://localhost:5173,http://localhost:9000
-        AUTH_CORS: ${APP_URL},${API_URL},http://localhost:8000,http://localhost:5173,http://localhost:9000
+        STORE_CORS: ${APP_URL},${DEV_APP_URL},http://localhost:8000,http://localhost:5173,http://localhost:3000
+        ADMIN_CORS: ${API_URL},${DEV_API_URL},http://localhost:5173,http://localhost:9000
+        AUTH_CORS: ${APP_URL},${API_URL},${DEV_APP_URL},${DEV_API_URL},http://localhost:8000,http://localhost:5173,http://localhost:9000
         DATABASE_URL: postgresql://${db_user}:${db_password}@${db_hostname}:5432/${db_hostname}?sslmode=disable
         MINIO_BUCKET: ${storage_bucketName}
         MINIO_ENDPOINT: ${storage_apiUrl}
@@ -48,79 +51,63 @@ zerops:
         EVENTS_REDIS_URL: ${redis_connectionString}
         WE_REDIS_URL: ${redis_connectionString}
         LOCKING_REDIS_URL: ${redis_connectionString}
-        JWT_SECRET: ${JWT_SECRET}
-        COOKIE_SECRET: ${COOKIE_SECRET}
-        STRIPE_API_KEY: ${STRIPE_API_KEY}
-        STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+        MEILISEARCH_HOST: http://${search_hostname}:${search_port}
+        MEILISEARCH_API_KEY: ${search_masterKey}
+        MEILISEARCH_PRODUCT_INDEX_NAME: products
         NEXTSTORE_RELOAD_SECRET: ${RELOAD_SECRET}
+        NEXTSTORE_RELOAD_HOST: ${NEXTSTORE_HOST}
       initCommands:
         - zsc execOnce ${appVersionId}_migration -- yarn migrate
         - zsc execOnce ${appVersionId}_links -- yarn syncLinks
-        # v2: idempotent emailpass bind. The first key could mark success
-        # after `medusa user` hit "already exists" with no working password.
         - zsc execOnce createInitialSuperadmin_v2 -- yarn createInitialSuperadmin
         - zsc execOnce seedInitialData -- yarn seedInitialData
         - yarn setInitialPublishableKey
         - yarn reloadNextstoreEnv
+        - zsc execOnce addInitialSearchDocuments -- yarn addInitialSearchDocuments
       ports:
         - port: 9000
           httpSupport: true
-      start: yarn start
       healthCheck:
         httpGet:
           port: 9000
           path: /health
 
-  - setup: nextstore
+  # Idle workspace — full repo, no start. SSH in and `cd backend && yarn dev`.
+  - setup: dev
     build:
       base: nodejs@24
       envVariables:
-        MEDUSA_BACKEND_URL: ${API_URL}
-        MEDUSA_PUBLISHABLE_KEY: ${medusa_CHANNEL_PUBLISHABLE_KEY}
-        NEXT_PUBLIC_MEDUSA_BACKEND_URL: ${API_URL}
-        NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${medusa_CHANNEL_PUBLISHABLE_KEY}
-        NEXT_PUBLIC_BASE_URL: ${APP_URL}
-        NEXT_PUBLIC_DEFAULT_REGION: de
-        OBJECT_STORAGE_API_URL: ${RUNTIME_OBJECT_STORAGE_API_URL}
-        NEXT_PUBLIC_STRIPE_KEY: ${STRIPE_PUBLISHABLE_KEY}
-      prepareCommands:
-        - corepack enable
+        BACKEND_URL: ${DEV_API_URL}
       buildCommands:
-        - cd nextstore && yarn
-        - cd nextstore && yarn build
-      deployFiles:
-        - nextstore/.next
-        - nextstore/package.json
-        - nextstore/next.config.js
-        - nextstore/yarn.lock
-        - nextstore/.yarnrc.yml
-        - nextstore/node_modules
-        - nextstore/public
-        - nextstore/check-env-variables.js
+        - cd backend && yarn
+      deployFiles: ./
       cache:
-        - nextstore/node_modules
-    deploy:
-      readinessCheck:
-        httpGet:
-          port: 8000
-          path: /api/health
+        - backend/node_modules
     run:
       base: nodejs@24
-      start: sh -c 'cd nextstore && ./node_modules/.bin/next start -p 8000'
-      healthCheck:
-        httpGet:
-          port: 8000
-          path: /api/health
-      ports:
-        - port: 8000
-          httpSupport: true
       envVariables:
-        MEDUSA_BACKEND_URL: http://${medusa_hostname}:9000
-        MEDUSA_PUBLISHABLE_KEY: ${medusa_CHANNEL_PUBLISHABLE_KEY}
-        NEXT_PUBLIC_MEDUSA_BACKEND_URL: ${API_URL}
-        NEXT_PUBLIC_BASE_URL: ${APP_URL}
-        NEXT_PUBLIC_DEFAULT_REGION: de
-        NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${medusa_CHANNEL_PUBLISHABLE_KEY}
-        OBJECT_STORAGE_API_URL: ${storage_apiUrl}
-        NEXT_PUBLIC_STRIPE_KEY: ${STRIPE_PUBLISHABLE_KEY}
-        RELOAD_SECRET: ${RELOAD_SECRET}
+        DATABASE_TYPE: postgres
+        NODE_ENV: development
+        MEDUSA_DISABLE_TELEMETRY: "true"
+        MEDUSA_FF_CACHING: "true"
+        BACKEND_URL: ${DEV_API_URL}
+        STOREFRONT_URL: ${DEV_APP_URL}
+        STORE_CORS: ${DEV_APP_URL},${APP_URL},http://localhost:8000,http://localhost:5173,http://localhost:3000
+        ADMIN_CORS: ${DEV_API_URL},${API_URL},http://localhost:5173,http://localhost:9000
+        AUTH_CORS: ${DEV_APP_URL},${DEV_API_URL},${APP_URL},${API_URL},http://localhost:8000,http://localhost:5173,http://localhost:9000
+        DATABASE_URL: postgresql://${db_user}:${db_password}@${db_hostname}:5432/${db_hostname}?sslmode=disable
+        MINIO_BUCKET: ${storage_bucketName}
+        MINIO_ENDPOINT: ${storage_apiUrl}
+        MINIO_SECRET_KEY: ${storage_secretAccessKey}
+        MINIO_ACCESS_KEY: ${storage_accessKeyId}
+        REDIS_URL: ${redis_connectionString}
+        CACHE_REDIS_URL: ${redis_connectionString}
+        EVENTS_REDIS_URL: ${redis_connectionString}
+        WE_REDIS_URL: ${redis_connectionString}
+        LOCKING_REDIS_URL: ${redis_connectionString}
+        MEILISEARCH_HOST: http://${search_hostname}:${search_port}
+        MEILISEARCH_API_KEY: ${search_masterKey}
+        MEILISEARCH_PRODUCT_INDEX_NAME: products
+      ports:
+        - port: 9000
+          httpSupport: true
