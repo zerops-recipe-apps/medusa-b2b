@@ -28,13 +28,13 @@ Medusa v2.21 B2B backend and admin ([zerops-recipe-apps/medusa-b2b](https://gith
 
 **Secrets** — project `vault:` in import YAML; do not duplicate `KEY: ${KEY}` in `zerops.yml`.
 
-**Monorepo** — `nextstore/` in the backend repo is for local dev; Zerops uses `medusa-b2b-nextstore` so git-connected `dev` deploys `./` safely.
+**Repos** — this app is backend-only at repo root; storefront is `medusa-b2b-nextstore`.
 <!-- #ZEROPS_EXTRACT_END:faq# -->
 
 <!-- #ZEROPS_EXTRACT_START:integration-guide# -->
 ## Integration
 
-- Backend `prod`: deploy `backend/.medusa/server`. Backend `dev`: `deployFiles: ./`.
+- `prod`: deploy `.medusa/server`. `dev`: `deployFiles: ./`.
 - Storefront: separate repo; `dev` deploys `./`, `prod` ships the Next build output.
 - No `run.start` in `zerops.yml`.
 <!-- #ZEROPS_EXTRACT_END:integration-guide# -->
