@@ -1,41 +1,112 @@
-# Medusa B2B (backend)
+# Medusa B2B Recipe App
 
 <!-- #ZEROPS_EXTRACT_START:intro# -->
-Medusa v2.21 B2B backend and admin on [Zerops](https://zerops.io). Optional Next.js storefront: [medusa-b2b-nextstore](https://github.com/zerops-recipe-apps/medusa-b2b-nextstore). PostgreSQL, Valkey, Meilisearch, MinIO, and Mailpit (dev envs). Omit nextstore services in the recipe for backend-only.
+[Medusa](https://medusajs.com) v2.21 B2B commerce API and admin at the repository root — companies, quotes, approvals, and B2B cart flows. Pairs with the optional Next.js storefront in [medusa-b2b-frontend](https://github.com/zerops-recipe-apps/medusa-b2b-frontend). PostgreSQL, Valkey, Meilisearch, and MinIO are wired in the [Medusa B2B recipe](https://app.zerops.io/recipes/medusa-b2b) on [Zerops](https://zerops.io).
 <!-- #ZEROPS_EXTRACT_END:intro# -->
 
-## Repos
+Used within [Medusa B2B recipe](https://app.zerops.io/recipes/medusa-b2b) for the Zerops platform.
+
+⬇️ **Full recipe page and deploy with one-click**
+
+[![Deploy on Zerops](https://github.com/zeropsio/recipe-shared-assets/blob/main/deploy-button/light/deploy-button.svg)](https://app.zerops.io/recipes/medusa-b2b?environment=small-production)
+
+![cover](https://github.com/zeropsio/recipe-shared-assets/blob/main/covers/svg/cover-nextjs.svg)
+
+## Repositories
 
 | Repo | Role |
 | --- | --- |
-| **This repo** | Medusa API + admin (`backend/`, `zerops.yml` → `dev` / `prod`) |
-| [medusa-b2b-nextstore](https://github.com/zerops-recipe-apps/medusa-b2b-nextstore) | Next.js 15 B2B storefront (separate Zerops service) |
+| [medusa-b2b](https://github.com/zerops-recipe-apps/medusa-b2b) (this repo) | Medusa backend + admin (`/app`) |
+| [medusa-b2b-frontend](https://github.com/zerops-recipe-apps/medusa-b2b-frontend) | Optional Next.js 15 storefront |
 
-[`nextstore/`](nextstore/) in this monorepo is for **local development** only (run against `API_URL`). Zerops never deploys it from here — that avoids git-connected `dev` workspaces dropping sibling folders.
+Import only `medusa*` services from the recipe when you want **backend-only** (Mate / headless). Zerops hostnames for the storefront stay `nextstore*`; Git repo names use `-frontend`.
 
-Recipe imports: [`.zerops-recipe/`](.zerops-recipe/) and [`zeropsio/recipes/medusa-b2b`](https://github.com/zeropsio/recipes/tree/main/medusa-b2b).
+Canonical recipe imports: [`zeropsio/recipes/medusa-b2b`](https://github.com/zeropsio/recipes/tree/main/medusa-b2b) and the copy in [`.zerops-recipe/`](.zerops-recipe/).
 
-## Local dev
+## Local development
 
 ```bash
-cd backend && yarn dev    # :9000, admin /app
-cd nextstore && yarn dev  # :8000 (optional)
+yarn install
+cp .env.template .env   # edit DATABASE_URL, Redis, optional MinIO / Meilisearch / SMTP
+yarn dev                # http://localhost:9000 — admin at /app
 ```
 
-## Why not Nx / Turbo?
+Optional storefront (separate clone):
 
-Yarn 1 backend + Yarn 3 storefront, no shared packages — workspace tooling adds cost without cache wins.
+```bash
+cd ../medusa-b2b-frontend
+cp .env.template .env.local
+yarn install && yarn dev   # http://localhost:8000
+```
 
-## Setups vs services
+Use a publishable API key from **Admin → Settings → API Key Management** in `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY`.
 
-Only **`dev`** and **`prod`** in `zerops.yml`. Hostnames like `medusastage` use **`zeropsSetup: prod`**.
+## Integration Guide
 
-<!-- #ZEROPS_EXTRACT_START:faq# -->
-## FAQ
+<!-- #ZEROPS_EXTRACT_START:integration-guide# -->
 
-**Mate / ZCP — Medusa only** — deploy `medusa` / `medusadev` / `medusastage`; skip `nextstore*`.
+### 1. Adding `zerops.yml`
 
-**Publishable key** — backend init runs `yarn reloadNextstoreEnv` when `RELOAD_SECRET` and split nextstore are deployed.
+Place at the repository root. Only **`dev`** and **`prod`** setups — stage hostnames such as `medusastage` use `zeropsSetup: prod`.
 
-**Vault** — project `vault:` in import YAML; no `KEY: ${KEY}` passthrough in `zerops.yml`.
-<!-- #ZEROPS_EXTRACT_END:faq# -->
+```yaml
+# Medusa at repo root. Storefront is a separate Git repo (medusa-b2b-frontend).
+zerops:
+  - setup: prod
+    build:
+      base: nodejs@24
+      envVariables:
+        BACKEND_URL: ${API_URL}
+      buildCommands:
+        - yarn
+        - yarn build
+        - cp -f package.json tsconfig.json .medusa/server/
+      deployFiles:
+        - .medusa/server/~
+        - ~node_modules
+      cache:
+        - node_modules
+    deploy:
+      readinessCheck:
+        httpGet:
+          port: 9000
+          path: /health
+    run:
+      base: nodejs@24
+      initCommands:
+        - zsc execOnce ${appVersionId}_migration -- yarn migrate
+        - zsc execOnce ${appVersionId}_links -- yarn syncLinks
+        - zsc execOnce createInitialSuperadmin_v2 -- yarn createInitialSuperadmin
+        - zsc execOnce seedInitialData -- yarn seedInitialData
+        - yarn setInitialPublishableKey
+        - yarn reloadNextstoreEnv
+        - zsc execOnce addInitialSearchDocuments -- yarn addInitialSearchDocuments
+      ports:
+        - port: 9000
+          httpSupport: true
+      healthCheck:
+        httpGet:
+          port: 9000
+          path: /health
+      # DATABASE_URL, Redis, MinIO, Meilisearch — composed from sibling services.
+      # Secrets (Stripe, SMTP, …) belong in the project vault, not KEY: ${KEY} here.
+
+  - setup: dev
+    build:
+      base: nodejs@24
+      buildCommands:
+        - yarn
+      deployFiles: ./
+      cache:
+        - node_modules
+    run:
+      base: nodejs@24
+      ports:
+        - port: 9000
+          httpSupport: true
+      # Full repo deploy so git-connected workspaces keep sources; SSH in and yarn dev.
+```
+
+See [zerops.yml](zerops.yml) for the full `envVariables` block. Do not add `run.start` — Zerops runs the Medusa production server from the built artifact.
+
+<!-- #ZEROPS_EXTRACT_END:integration-guide# -->

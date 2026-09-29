@@ -1,0 +1,83 @@
+{
+  "name": "medusa-b2b-backend",
+  "version": "0.0.1",
+  "description": "Medusa v2.21 B2B commerce backend for Zerops, with company, quote, and approval modules.",
+  "author": "Zerops",
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zerops-recipe-apps/medusa-b2b.git"
+  },
+  "homepage": "https://github.com/zerops-recipe-apps/medusa-b2b",
+  "bugs": {
+    "url": "https://github.com/zerops-recipe-apps/medusa-b2b/issues"
+  },
+  "keywords": [
+    "medusa",
+    "ecommerce",
+    "b2b",
+    "zerops",
+    "nodejs",
+    "starter"
+  ],
+  "scripts": {
+    "build": "medusa build",
+    "start": "medusa start",
+    "dev": "medusa develop",
+    "lint": "medusa lint",
+    "clean": "rm -rf .medusa/server .medusa/admin node_modules",
+    "test:integration:http": "TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",
+    "test:integration:modules": "TEST_TYPE=integration:modules NODE_OPTIONS=--experimental-vm-modules jest --silent --runInBand --forceExit",
+    "test:unit": "TEST_TYPE=unit NODE_OPTIONS=--experimental-vm-modules jest --silent --runInBand --forceExit",
+    "migrate": "medusa db:migrate --execute-all-links",
+    "syncLinks": "medusa db:sync-links --execute-all",
+    "createInitialSuperadmin": "medusa exec ./src/scripts/create-superadmin.js",
+    "seedInitialData": "medusa exec ./src/scripts/seed.js",
+    "setInitialPublishableKey": "bash -c 'token=$(medusa exec ./src/scripts/output-publishable-key.js | grep -o \"<PK_TOKEN>.*</PK_TOKEN>\" | sed \"s/<PK_TOKEN>//g;s/<\\/PK_TOKEN>//g\" | tr -d \"\\n\\r\"); test -n \"$token\" || { echo \"No publishable key token extracted\" >&2; exit 1; }; zsc setEnv CHANNEL_PUBLISHABLE_KEY \"$token\" --sensitive'",
+    "reloadNextstoreEnv": "bash -c 'test -n \"$RELOAD_SECRET\" || exit 0; host=\"${NEXTSTORE_HOST:-nextstore}\"; curl -sf --max-time 15 -X POST -H \"x-reload-secret: $RELOAD_SECRET\" \"http://${host}:8000/api/internal/reload-env\" || echo \"reloadNextstoreEnv: nextstore reload skipped (not running yet).\" >&2'",
+    "addInitialSearchDocuments": "medusa exec ./src/scripts/search-index.js"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "5.5.7",
+    "@medusajs/admin-sdk": "2.21.0",
+    "@medusajs/admin-shared": "2.21.0",
+    "@medusajs/cli": "2.21.0",
+    "@medusajs/dashboard": "2.21.0",
+    "@medusajs/framework": "2.21.0",
+    "@medusajs/icons": "2.21.0",
+    "@medusajs/js-sdk": "2.21.0",
+    "@medusajs/medusa": "2.21.0",
+    "@medusajs/ui": "4.2.4",
+    "@tanstack/react-query": "5.64.2",
+    "meilisearch": "0.60.0",
+    "nodemailer": "9.1.1",
+    "pg": "8.16.3",
+    "react-hook-form": "7.83.0",
+    "react-i18next": "13.5.0",
+    "react-router-dom": "7.18.2",
+    "zod": "4.2.0"
+  },
+  "devDependencies": {
+    "@medusajs/test-utils": "2.21.0",
+    "@medusajs/ui-preset": "2.21.0",
+    "@swc/core": "^1.5.7",
+    "@swc/jest": "^0.2.36",
+    "@types/jest": "^29.5.14",
+    "@types/nodemailer": "8.0.1",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "jest": "^29.7.0",
+    "prop-types": "^15.8.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.3",
+    "vite": "7.3.6"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
+}
