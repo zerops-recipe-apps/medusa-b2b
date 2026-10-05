@@ -48,12 +48,14 @@ zerops:
         MEILISEARCH_HOST: http://${search_hostname}:${search_port}
         MEILISEARCH_API_KEY: ${search_masterKey}
         MEILISEARCH_PRODUCT_INDEX_NAME: products
+        JWT_SECRET: ${JWT_SECRET}
+        COOKIE_SECRET: ${COOKIE_SECRET}
         RELOAD_SECRET: ${RELOAD_SECRET}
       initCommands:
         - zsc execOnce ${appVersionId}_migration -- yarn migrate
         - zsc execOnce ${appVersionId}_links -- yarn syncLinks
         - zsc execOnce createInitialSuperadmin_v2 -- yarn createInitialSuperadmin
-        - zsc execOnce seedInitialData -- yarn seedInitialData
+        - zsc execOnce seedInitialCatalog_v2 -- yarn seedInitialData
         - yarn setInitialPublishableKey
         - yarn reloadNextstoreEnv
         - zsc execOnce addInitialSearchDocuments -- yarn addInitialSearchDocuments
