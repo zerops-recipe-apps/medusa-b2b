@@ -48,6 +48,7 @@ zerops:
         MEILISEARCH_HOST: http://${search_hostname}:${search_port}
         MEILISEARCH_API_KEY: ${search_masterKey}
         MEILISEARCH_PRODUCT_INDEX_NAME: products
+        RELOAD_SECRET: ${RELOAD_SECRET}
       initCommands:
         - zsc execOnce ${appVersionId}_migration -- yarn migrate
         - zsc execOnce ${appVersionId}_links -- yarn syncLinks
@@ -59,6 +60,7 @@ zerops:
       ports:
         - port: 9000
           httpSupport: true
+      start: yarn start
       healthCheck:
         httpGet:
           port: 9000
