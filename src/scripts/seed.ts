@@ -30,11 +30,22 @@ export default async function seedDemoData({ container }: ExecArgs) {
   const salesChannelModuleService = container.resolve(Modules.SALES_CHANNEL)
   const storeModuleService = container.resolve(Modules.STORE)
   const regionModuleService = container.resolve(Modules.REGION)
+  const productModuleService = container.resolve(Modules.PRODUCT)
+
+  const existingProducts = await productModuleService.listProducts(
+    {},
+    { take: 1 }
+  )
+  if (existingProducts.length > 0) {
+    logger.info("Products already present; skipping seed.")
+    return
+  }
 
   const existingRegions = await regionModuleService.listRegions({})
   if (existingRegions.length > 0) {
-    logger.info("Seed data already present, skipping.")
-    return
+    logger.info(
+      "Regions exist without products; continuing catalog seed (may require manual cleanup if this fails)."
+    )
   }
 
   const countries = ["gb", "de", "dk", "se", "fr", "es", "it"]
