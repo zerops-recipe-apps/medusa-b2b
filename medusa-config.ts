@@ -19,7 +19,7 @@ const MEILISEARCH_API_KEY = process.env.MEILISEARCH_API_KEY || ""
 const SMTP_HOST = process.env.SMTP_HOST
 const emailNotificationProvider = SMTP_HOST
   ? {
-      resolve: "./modules/smtp-notification",
+      resolve: "./src/modules/smtp-notification",
       id: "smtp",
       options: {
         channels: ["email"],
@@ -41,9 +41,9 @@ const emailNotificationProvider = SMTP_HOST
     }
 
 const modules: InputConfigModules = [
-  { resolve: "./modules/company" },
-  { resolve: "./modules/quote" },
-  { resolve: "./modules/approval" },
+  { resolve: "./src/modules/company" },
+  { resolve: "./src/modules/quote" },
+  { resolve: "./src/modules/approval" },
   {
     resolve: "@medusajs/medusa/notification",
     options: {
@@ -141,7 +141,7 @@ if (
 
 if (envEnabled(MEILISEARCH_HOST) && envEnabled(MEILISEARCH_API_KEY)) {
   modules.push({
-    resolve: "./modules/meilisearch",
+    resolve: "./src/modules/meilisearch",
     options: {
       host: MEILISEARCH_HOST,
       apiKey: MEILISEARCH_API_KEY,

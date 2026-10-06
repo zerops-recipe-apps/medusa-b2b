@@ -34,8 +34,8 @@ export default async function productSearchIndexHandler({
       handle: product.handle,
       thumbnail: product.thumbnail,
       variant_sku: (product.variants ?? [])
-        .map((variant: { sku?: string }) => variant.sku)
-        .filter(Boolean)
+        .map((variant) => variant.sku)
+        .filter((sku): sku is string => sku != null && sku !== "")
         .join(" "),
     },
   ])
