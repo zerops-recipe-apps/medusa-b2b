@@ -42,6 +42,8 @@
     "@hookform/resolvers": "5.5.7",
     "@medusajs/admin-sdk": "2.21.0",
     "@medusajs/admin-shared": "2.21.0",
+    "@medusajs/caching": "2.21.0",
+    "@medusajs/caching-redis": "2.21.0",
     "@medusajs/cli": "2.21.0",
     "@medusajs/dashboard": "2.21.0",
     "@medusajs/framework": "2.21.0",

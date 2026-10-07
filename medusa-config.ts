@@ -55,6 +55,50 @@ const modules: InputConfigModules = [
   { resolve: "./src/modules/quote" },
   { resolve: "./src/modules/approval" },
   {
+    resolve: "@medusajs/medusa/caching",
+    options: {
+      providers: [
+        {
+          resolve: "@medusajs/caching-redis",
+          id: "caching-redis",
+          is_default: true,
+          options: {
+            redisUrl: CACHE_REDIS_URL,
+          },
+        },
+      ],
+    },
+  },
+  {
+    resolve: "@medusajs/medusa/event-bus-redis",
+    options: {
+      redisUrl: EVENTS_REDIS_URL,
+    },
+  },
+  {
+    resolve: "@medusajs/medusa/workflow-engine-redis",
+    options: {
+      redis: {
+        redisUrl: WE_REDIS_URL,
+      },
+    },
+  },
+  {
+    resolve: "@medusajs/medusa/locking",
+    options: {
+      providers: [
+        {
+          resolve: "@medusajs/medusa/locking-redis",
+          id: "locking-redis",
+          is_default: true,
+          options: {
+            redisUrl: LOCKING_REDIS_URL,
+          },
+        },
+      ],
+    },
+  },
+  {
     resolve: "@medusajs/medusa/notification",
     options: {
       providers: [
@@ -71,55 +115,6 @@ const modules: InputConfigModules = [
     },
   },
 ]
-
-if (envEnabled(process.env.REDIS_URL)) {
-  modules.push(
-    {
-      resolve: "@medusajs/medusa/caching",
-      options: {
-        providers: [
-          {
-            resolve: "@medusajs/medusa/caching-redis",
-            id: "caching-redis",
-            is_default: true,
-            options: {
-              redisUrl: CACHE_REDIS_URL,
-            },
-          },
-        ],
-      },
-    },
-    {
-      resolve: "@medusajs/medusa/event-bus-redis",
-      options: {
-        redisUrl: EVENTS_REDIS_URL,
-      },
-    },
-    {
-      resolve: "@medusajs/medusa/workflow-engine-redis",
-      options: {
-        redis: {
-          redisUrl: WE_REDIS_URL,
-        },
-      },
-    },
-    {
-      resolve: "@medusajs/medusa/locking",
-      options: {
-        providers: [
-          {
-            resolve: "@medusajs/medusa/locking-redis",
-            id: "locking-redis",
-            is_default: true,
-            options: {
-              redisUrl: LOCKING_REDIS_URL,
-            },
-          },
-        ],
-      },
-    }
-  )
-}
 
 if (
   envEnabled(process.env.MINIO_ENDPOINT) &&
@@ -235,7 +230,10 @@ module.exports = defineConfig({
       jwtSecret: process.env.JWT_SECRET || "supersecret",
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
     },
-    ...(envEnabled(process.env.REDIS_URL) ? { redisUrl: REDIS_URL } : {}),
+    redisUrl: REDIS_URL,
+  },
+  featureFlags: {
+    caching: true,
   },
   modules,
 })

@@ -55,7 +55,7 @@ zerops:
       initCommands:
         - zsc execOnce ${appVersionId}_migration -- yarn migrate
         - zsc execOnce ${appVersionId}_links -- yarn syncLinks
-        - zsc execOnce createInitialSuperadmin_v2 -- yarn createInitialSuperadmin
+        - zsc execOnce createInitialSuperadmin_v3 -- yarn createInitialSuperadmin
         - zsc execOnce seedInitialCatalog_v2 -- yarn seedInitialData
         - yarn setInitialPublishableKey
         - yarn reloadNextstoreEnv
@@ -119,7 +119,7 @@ zerops:
       initCommands:
         - zsc execOnce ${appVersionId}_migration -- yarn migrate
         - zsc execOnce ${appVersionId}_links -- yarn syncLinks
-        - zsc execOnce createInitialSuperadmin_v2 -- yarn createInitialSuperadmin
+        - zsc execOnce createInitialSuperadmin_v3 -- yarn createInitialSuperadmin
         - zsc execOnce seedInitialCatalog_v2 -- yarn seedInitialData
         - yarn setInitialPublishableKey
         - yarn reloadNextstoreEnv
