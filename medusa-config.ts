@@ -1,4 +1,9 @@
-import { loadEnv, defineConfig } from "@medusajs/framework/utils"
+import {
+  loadEnv,
+  defineConfig,
+  Modules,
+  ContainerRegistrationKeys,
+} from "@medusajs/framework/utils"
 import type { InputConfigModules } from "@medusajs/types"
 
 loadEnv(process.env.NODE_ENV || "development", process.cwd())
@@ -16,7 +21,8 @@ const EVENTS_REDIS_URL = process.env.EVENTS_REDIS_URL || REDIS_URL
 const WE_REDIS_URL = process.env.WE_REDIS_URL || REDIS_URL
 const LOCKING_REDIS_URL = process.env.LOCKING_REDIS_URL || REDIS_URL
 const BACKEND_URL = process.env.BACKEND_URL || ""
-const STOREFRONT_URL = process.env.STOREFRONT_URL || ""
+const STOREFRONT_URL =
+  process.env.STOREFRONT_URL || process.env.NEXT_STORE_URL || ""
 const MEILISEARCH_HOST = process.env.MEILISEARCH_HOST || ""
 const MEILISEARCH_API_KEY = process.env.MEILISEARCH_API_KEY || ""
 
@@ -171,6 +177,49 @@ if (envEnabled(process.env.STRIPE_API_KEY)) {
     },
   })
 }
+
+const authProviders: Record<string, unknown>[] = [
+  {
+    resolve: "@medusajs/medusa/auth-emailpass",
+    id: "emailpass",
+  },
+]
+
+if (envEnabled(process.env.GOOGLE_CLIENT_ID) && envEnabled(process.env.GOOGLE_CLIENT_SECRET)) {
+  authProviders.push({
+    resolve: "@medusajs/medusa/auth-google",
+    id: "google",
+    options: {
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackUrl:
+        process.env.GOOGLE_CALLBACK_URL ||
+        `${STOREFRONT_URL}/auth/google/callback`,
+    },
+  })
+}
+
+if (envEnabled(process.env.GITHUB_CLIENT_ID) && envEnabled(process.env.GITHUB_CLIENT_SECRET)) {
+  authProviders.push({
+    resolve: "@medusajs/medusa/auth-github",
+    id: "github",
+    options: {
+      clientId: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      callbackUrl:
+        process.env.GITHUB_CALLBACK_URL ||
+        `${STOREFRONT_URL}/auth/github/callback`,
+    },
+  })
+}
+
+modules.push({
+  resolve: "@medusajs/medusa/auth",
+  dependencies: [Modules.CACHE, ContainerRegistrationKeys.LOGGER],
+  options: {
+    providers: authProviders,
+  },
+})
 
 module.exports = defineConfig({
   admin: {
