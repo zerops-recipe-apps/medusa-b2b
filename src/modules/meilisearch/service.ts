@@ -19,10 +19,20 @@ export default class MeilisearchModuleService {
       ...options,
     }
 
-    if (options.host && options.apiKey) {
+    const host = options.host?.trim()
+    const apiKey = options.apiKey?.trim()
+    const hostReady =
+      host && apiKey && !host.includes("${") && !apiKey.includes("${")
+
+    if (hostReady) {
+      try {
+        new URL(host)
+      } catch {
+        return
+      }
       this.client = new Meilisearch({
-        host: options.host,
-        apiKey: options.apiKey,
+        host,
+        apiKey,
       })
     }
   }

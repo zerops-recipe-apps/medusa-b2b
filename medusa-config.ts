@@ -6,6 +6,10 @@ loadEnv(process.env.NODE_ENV || "development", process.cwd())
 /** Empty or whitespace-only secrets stay off — Zerops may inject "". */
 const envEnabled = (value: string | undefined) => Boolean(value?.trim())
 
+/** Zerops leaves ${search_hostname} literals when the search service is not in the project yet. */
+const resolvedEnv = (value: string | undefined) =>
+  envEnabled(value) && !value!.includes("${")
+
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379"
 const CACHE_REDIS_URL = process.env.CACHE_REDIS_URL || REDIS_URL
 const EVENTS_REDIS_URL = process.env.EVENTS_REDIS_URL || REDIS_URL
@@ -139,7 +143,7 @@ if (
   })
 }
 
-if (envEnabled(MEILISEARCH_HOST) && envEnabled(MEILISEARCH_API_KEY)) {
+if (resolvedEnv(MEILISEARCH_HOST) && resolvedEnv(MEILISEARCH_API_KEY)) {
   modules.push({
     resolve: "./src/modules/meilisearch",
     options: {
