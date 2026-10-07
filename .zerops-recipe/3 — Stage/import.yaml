@@ -94,7 +94,7 @@ services:
   - hostname: nextstore
     type: nodejs@24
     priority: 5
-    zeropsSetup: prod
+    zeropsSetup: nextstore
     buildFromGit: https://github.com/zerops-recipe-apps/medusa-b2b-frontend
     enableSubdomainAccess: true
     verticalAutoscaling:

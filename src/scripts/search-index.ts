@@ -19,6 +19,9 @@ export default async function searchIndexScript({ container }: ExecArgs) {
   try {
     meilisearch = container.resolve(MEILISEARCH_MODULE)
   } catch {
+    console.warn(
+      "addInitialSearchDocuments: Meilisearch module not loaded (search service or env missing); skipping."
+    )
     return
   }
 
