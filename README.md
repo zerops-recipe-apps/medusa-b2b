@@ -84,6 +84,7 @@ zerops:
       ports:
         - port: 9000
           httpSupport: true
+      start: yarn start
       healthCheck:
         httpGet:
           port: 9000
@@ -107,6 +108,6 @@ zerops:
       # Full repo deploy so git-connected workspaces keep sources; SSH in and yarn dev.
 ```
 
-See [zerops.yml](zerops.yml) for the full `envVariables` block. Do not add `run.start` — Zerops runs the Medusa production server from the built artifact.
+See [zerops.yml](zerops.yml) for the full `envVariables` block.
 
 <!-- #ZEROPS_EXTRACT_END:integration-guide# -->
